@@ -1,2 +1,115 @@
-# usb_tools
-USB Tools for testing drives
+# USB Tools 💾
+
+Comprehensive USB drive testing utilities for Linux systems. Test drive speed and validate capacity to detect fake/counterfeit USB drives.
+
+## 📦 Available Tools
+
+### 1. **usb_test.py** - Python Testing Suite (Recommended)
+Modern Python-based USB testing tool with:
+- 🎨 Interactive menu system
+- 📊 Multiple speed test iterations with statistics
+- 🌈 Beautiful Unicode/emoji output
+- 📈 Advanced performance analysis
+- ⚡ More robust testing capabilities
+
+### 2. **usb_test.sh** - Bash Script (Legacy)
+Original bash script for quick testing:
+- Simple command-line interface
+- Fast single-pass speed tests
+- Capacity validation with f3
+
+## 🚀 Quick Start
+
+### Python Version (Interactive)
+```bash
+sudo python3 usb_test.py
+```
+
+### Python Version (Command Line)
+```bash
+# Speed test only
+sudo python3 usb_test.py -s /media/usb
+
+# All tests
+sudo python3 usb_test.py -a /media/usb
+
+# Custom iterations
+sudo python3 usb_test.py -s /media/usb -n 8
+```
+
+### Bash Version
+```bash
+# Speed test only
+sudo ./usb_test.sh -s /media/usb
+
+# All tests
+sudo ./usb_test.sh -a /media/usb
+```
+
+## 📋 System Requirements
+
+### Required Packages
+- **fio** - Flexible I/O Tester
+- **f3** - Fight Flash Fraud tools
+- **python3** - For the Python version (usually pre-installed)
+
+### Installation
+
+**Fedora/RHEL/CentOS:**
+```bash
+sudo dnf install fio f3 python3
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt install fio f3 python3
+```
+
+**Arch Linux:**
+```bash
+sudo pacman -S fio f3 python
+```
+
+## 📚 Documentation
+
+- [**USB_Test_BASH.md**](USB_Test_BASH.md) - Detailed bash script documentation
+- [**USB_Test_PYTHON.md**](USB_Test_PYTHON.md) - Python script guide and features
+
+## ⚡ Features Comparison
+
+| Feature | Python Script | Bash Script |
+|---------|--------------|-------------|
+| Interactive Menu | ✅ | ❌ |
+| Multiple Test Iterations | ✅ | ❌ |
+| Statistics (avg/min/max) | ✅ | ❌ |
+| Unicode/Emoji Output | ✅ | ❌ |
+| USB Version Detection | ✅ | ❌ |
+| Performance Rating | ✅ | ❌ |
+| Colored Output | ✅ | ❌ |
+| Progress Indicators | ✅ | ❌ |
+| Command-line Mode | ✅ | ✅ |
+| Speed Test | ✅ | ✅ |
+| Capacity Test | ✅ | ✅ |
+
+## 🎯 Use Cases
+
+- **Verify new USB drives** - Detect counterfeit/fake capacity drives
+- **Performance testing** - Measure actual read/write speeds
+- **Quality assurance** - Test drive reliability over multiple runs
+- **Troubleshooting** - Identify slow or failing drives
+- **Purchase validation** - Verify advertised specifications
+
+## ⚠️ Important Notes
+
+- **Root required**: Both scripts require sudo/root privileges
+- **Capacity tests are destructive**: They will overwrite all data on the drive
+- **Always backup**: Save important data before running capacity tests
+- **Time required**: Capacity tests can take hours on large drives
+
+## 🤝 Contributing
+
+Feel free to submit issues or pull requests for improvements!
+
+## 📄 License
+
+These tools are provided as-is for USB drive testing and validation purposes.
