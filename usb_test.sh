@@ -4,7 +4,8 @@
 show_help() {
     echo "Usage: sudo $0 [OPTION] [MOUNT_POINT]"
     echo "  -s    Speed Test Only"
-    echo "  -c    Capacity Test Only"
+    echo "  -p    Capacity Test (Non-Destructive with f3probe)"
+    echo "  -c    Capacity Test (Full/Destructive)"
     echo "  -a    All Tests"
     exit 1
 }
@@ -16,6 +17,12 @@ for cmd in fio f3write awk; do
         exit 1
     fi
 done
+
+# Check for f3probe (optional, for non-destructive test)
+F3PROBE_AVAILABLE=0
+if command -v f3probe &> /dev/null; then
+    F3PROBE_AVAILABLE=1
+fi
 
 run_speed_test() {
     local MNT=$1
@@ -45,10 +52,36 @@ run_capacity_test() {
     rm -f "$MNT"/*.h2w
 }
 
+run_capacity_test_safe() {
+    local MNT=$1
+    echo -e "\n>>> RUNNING NON-DESTRUCTIVE CAPACITY TEST (f3probe) <<<"
+    
+    if [ $F3PROBE_AVAILABLE -eq 0 ]; then
+        echo "Error: f3probe is not installed."
+        echo "Install with: sudo apt install f3  (Debian/Ubuntu)"
+        echo "          or: sudo dnf install f3  (Fedora/RHEL)"
+        echo "Note: You can still use the full capacity test with -c"
+        return 1
+    fi
+    
+    echo "This is a NON-DESTRUCTIVE test - existing files will NOT be touched."
+    echo "Only free space will be tested."
+    echo ""
+    
+    f3probe --destructive "$MNT"
+    
+    if [ $? -eq 0 ]; then
+        echo -e "\nNon-destructive capacity test completed!"
+    else
+        echo -e "\nCapacity test encountered an error!"
+    fi
+}
+
 # Main Logic
-while getopts "scah" opt; do
+while getopts "spcah" opt; do
     case $opt in
         s) MODE="SPEED" ;;
+        p) MODE="CAPACITY_SAFE" ;;
         c) MODE="CAPACITY" ;;
         a) MODE="ALL" ;;
         *) show_help ;;
@@ -60,6 +93,7 @@ MOUNT_PATH=$1
 if [[ -z "$MOUNT_PATH" ]]; then show_help; fi
 
 if [[ "$MODE" == "SPEED" || "$MODE" == "ALL" ]]; then run_speed_test "$MOUNT_PATH"; fi
+if [[ "$MODE" == "CAPACITY_SAFE" ]]; then run_capacity_test_safe "$MOUNT_PATH"; fi
 if [[ "$MODE" == "CAPACITY" || "$MODE" == "ALL" ]]; then run_capacity_test "$MOUNT_PATH"; fi
 
 echo -e "\n[Finished]"

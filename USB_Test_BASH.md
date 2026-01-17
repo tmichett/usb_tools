@@ -22,9 +22,11 @@
 The script requires the following tools to be installed:
 
 1. **fio** - Flexible I/O Tester for speed benchmarking
-2. **f3** - Fight Flash Fraud tools (includes `f3write` and `f3read`)
+2. **f3** - Fight Flash Fraud tools (includes `f3write`, `f3read`, and `f3probe`)
 3. **awk** - Text processing (usually pre-installed)
 4. **sed** - Stream editor (usually pre-installed)
+
+**Note**: `f3probe` (included in newer f3 packages) is optional but recommended for non-destructive capacity testing. The script will work without it, but you'll only have access to the destructive capacity test.
 
 ### Installation Instructions
 
@@ -64,8 +66,9 @@ sudo ./usb_test.sh [OPTION] [MOUNT_POINT]
 | Option | Description |
 |--------|-------------|
 | `-s` | Speed Test Only - Measures read/write speeds |
-| `-c` | Capacity Test Only - Validates actual storage capacity |
-| `-a` | All Tests - Runs both speed and capacity tests |
+| `-p` | Capacity Test (Non-Destructive) - Tests free space only using f3probe |
+| `-c` | Capacity Test (Full/Destructive) - Validates entire drive capacity |
+| `-a` | All Tests - Runs speed and full capacity tests |
 | `-h` | Show help message |
 
 ### Examples
@@ -76,7 +79,15 @@ sudo ./usb_test.sh -s /media/usb
 ```
 This performs a 512MB read/write test and reports speeds in MiB/s.
 
-#### 2. Run Capacity Test Only
+#### 2. Run Non-Destructive Capacity Test
+```bash
+sudo ./usb_test.sh -p /media/usb
+```
+This tests the free space on your drive without touching existing files. Safe and fast!
+
+**✅ Safe**: Your existing files will NOT be touched. Only free space is tested.
+
+#### 3. Run Full Capacity Test (Destructive)
 ```bash
 sudo ./usb_test.sh -c /media/usb
 ```
@@ -84,11 +95,50 @@ This writes test files across the entire drive, then reads them back to verify i
 
 **⚠️ Warning**: This test will fill the entire USB drive with test data. Any existing data will be overwritten!
 
-#### 3. Run All Tests
+#### 4. Run All Tests
 ```bash
 sudo ./usb_test.sh -a /media/usb
 ```
-Runs both speed and capacity tests sequentially.
+Runs both speed and full capacity tests sequentially.
+
+## Capacity Testing: Destructive vs Non-Destructive
+
+### Non-Destructive Capacity Test (`-p`)
+
+**What it does**:
+- Uses `f3probe` to test only the FREE SPACE on your drive
+- Does NOT touch or delete existing files
+- Faster than full capacity test
+- Safe to run on drives with important data
+
+**When to use**:
+- Testing a drive that already has files you want to keep
+- Quick capacity verification
+- Checking for obvious capacity fraud
+
+**Limitations**:
+- Only tests free space, not the entire drive
+- May miss issues in areas where existing files are stored
+- Less comprehensive than full capacity test
+
+### Full Capacity Test (`-c`)
+
+**What it does**:
+- Uses `f3write` and `f3read` to test the ENTIRE drive
+- Fills the drive completely with test data
+- Reads back and verifies every byte
+- Most thorough test for detecting fake drives
+
+**When to use**:
+- Testing a brand new USB drive
+- Suspicious drives that may be counterfeit
+- When you need the most comprehensive test
+- After backing up important data
+
+**⚠️ Warning**:
+- **DESTRUCTIVE** - Erases all data on the drive
+- Takes several hours on large drives
+- Always backup first!
 
 ## How It Works
 

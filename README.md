@@ -8,6 +8,7 @@ Comprehensive USB drive testing utilities for Linux systems. Test drive speed an
 Modern Python-based USB testing tool with:
 - 🎨 Interactive menu system
 - 📊 Multiple speed test iterations with statistics
+- 🛡️ Non-destructive capacity testing (safe!)
 - 🌈 Beautiful Unicode/emoji output
 - 📈 Advanced performance analysis
 - ⚡ More robust testing capabilities
@@ -16,6 +17,7 @@ Modern Python-based USB testing tool with:
 Original bash script for quick testing:
 - Simple command-line interface
 - Fast single-pass speed tests
+- Non-destructive and full capacity testing
 - Capacity validation with f3
 
 ## 🚀 Quick Start
@@ -30,6 +32,9 @@ sudo python3 usb_test.py
 # Speed test only
 sudo python3 usb_test.py -s /media/usb
 
+# Non-destructive capacity test (safe!)
+sudo python3 usb_test.py --safe /media/usb
+
 # All tests
 sudo python3 usb_test.py -a /media/usb
 
@@ -41,6 +46,9 @@ sudo python3 usb_test.py -s /media/usb -n 8
 ```bash
 # Speed test only
 sudo ./usb_test.sh -s /media/usb
+
+# Non-destructive capacity test (safe!)
+sudo ./usb_test.sh -p /media/usb
 
 # All tests
 sudo ./usb_test.sh -a /media/usb
@@ -89,7 +97,8 @@ sudo pacman -S fio f3 python
 | Progress Indicators | ✅ | ❌ |
 | Command-line Mode | ✅ | ✅ |
 | Speed Test | ✅ | ✅ |
-| Capacity Test | ✅ | ✅ |
+| Non-Destructive Capacity Test | ✅ | ✅ |
+| Full Capacity Test | ✅ | ✅ |
 
 ## 🎯 Use Cases
 
@@ -102,9 +111,12 @@ sudo pacman -S fio f3 python
 ## ⚠️ Important Notes
 
 - **Root required**: Both scripts require sudo/root privileges
-- **Capacity tests are destructive**: They will overwrite all data on the drive
-- **Always backup**: Save important data before running capacity tests
-- **Time required**: Capacity tests can take hours on large drives
+- **Two capacity test modes**:
+  - 🛡️ **Non-destructive** (`--safe` or `-p`): Tests free space only, keeps your files safe
+  - ⚠️ **Full/Destructive** (`-c`): Tests entire drive, erases all data
+- **Always backup**: Save important data before running full capacity tests
+- **Time required**: Full capacity tests can take hours on large drives
+- **Non-destructive is fast**: Safe capacity tests complete in minutes
 
 ## 🤝 Contributing
 

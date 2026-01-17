@@ -100,7 +100,23 @@ sudo ./usb_test.sh -s /media/usb
 
 ---
 
-### 📦 Detect Fake/Counterfeit Drives
+### 📦 Check Drive Capacity
+
+#### 🛡️ Non-Destructive (Safe - Keeps Your Files)
+
+**Python:**
+```bash
+sudo python3 usb_test.py --safe /media/usb
+```
+
+**Bash:**
+```bash
+sudo ./usb_test.sh -p /media/usb
+```
+
+✅ **Safe**: Only tests free space, existing files are NOT touched!
+
+#### 📦 Full Capacity Test (Destructive - Erases Data)
 
 **Python:**
 ```bash
@@ -112,6 +128,7 @@ sudo python3 usb_test.py -c /media/usb
 sudo ./usb_test.sh -c /media/usb
 ```
 
+⚠️ **Warning**: Erases ALL data! Backup first!
 ⏱️ **Time Required**: Several hours for large drives!
 
 ---
@@ -273,10 +290,13 @@ sudo python3 usb_test.py -s /media/usb
 # Speed test (custom iterations)
 sudo python3 usb_test.py -s /media/usb -n 8
 
-# Capacity test
+# Non-destructive capacity test (SAFE)
+sudo python3 usb_test.py --safe /media/usb
+
+# Full capacity test (DESTRUCTIVE)
 sudo python3 usb_test.py -c /media/usb
 
-# All tests
+# All tests (speed + full capacity)
 sudo python3 usb_test.py -a /media/usb
 ```
 
@@ -285,10 +305,13 @@ sudo python3 usb_test.py -a /media/usb
 # Speed test only
 sudo ./usb_test.sh -s /media/usb
 
-# Capacity test only
+# Non-destructive capacity test (SAFE)
+sudo ./usb_test.sh -p /media/usb
+
+# Full capacity test (DESTRUCTIVE)
 sudo ./usb_test.sh -c /media/usb
 
-# All tests
+# All tests (speed + full capacity)
 sudo ./usb_test.sh -a /media/usb
 ```
 

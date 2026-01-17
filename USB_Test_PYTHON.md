@@ -11,6 +11,7 @@
 - **Unicode & Emoji Support** - Visual indicators and beautiful output
 - **Color-Coded Output** - ANSI colors for different message types
 - **Progress Indicators** - Real-time feedback during tests
+- **Non-Destructive Option** - Safe capacity testing without erasing data
 
 ### 📊 Advanced Testing
 - **Multiple Speed Test Iterations** - Run 3-10 tests and average results
@@ -34,7 +35,9 @@
 
 1. **Python 3** - Usually pre-installed on modern Linux systems
 2. **fio** - Flexible I/O Tester for speed benchmarking
-3. **f3** - Fight Flash Fraud tools (includes f3write and f3read)
+3. **f3** - Fight Flash Fraud tools (includes f3write, f3read, and f3probe)
+
+**Note**: `f3probe` (included in newer f3 packages) enables non-destructive capacity testing. The script will detect if it's available and enable/disable the feature accordingly.
 
 ### Python Standard Library Dependencies
 All required Python modules are part of the standard library:
@@ -85,9 +88,10 @@ sudo python3 usb_test.py
 **Menu Options:**
 ```
 1. ⚡ Speed Test Only
-2. 📦 Capacity Test Only
-3. 🚀 Run All Tests
-4. ⚙️  Advanced Speed Test (custom iterations)
+2. 🛡️  Capacity Test (Non-Destructive)
+3. 📦 Capacity Test (Full/Destructive)
+4. 🚀 Run All Tests (Speed + Full Capacity)
+5. ⚙️  Advanced Speed Test (custom iterations)
 0. ❌ Exit
 ```
 
@@ -105,8 +109,9 @@ sudo python3 usb_test.py [OPTIONS] <MOUNT_POINT>
 | Option | Description |
 |--------|-------------|
 | `-s, --speed` | Run speed test only |
-| `-c, --capacity` | Run capacity test only |
-| `-a, --all` | Run all tests |
+| `--safe, --capacity-safe` | Run non-destructive capacity test |
+| `-c, --capacity` | Run full capacity test (DESTRUCTIVE) |
+| `-a, --all` | Run all tests (speed + full capacity) |
 | `-n, --iterations N` | Number of speed test iterations (default: 5) |
 | `--no-interactive` | Disable interactive mode |
 | `-h, --help` | Show help message |
@@ -131,27 +136,92 @@ sudo python3 usb_test.py -s /media/usb -n 8
 ```
 Runs 8 speed tests for more accurate averaging.
 
-#### 4. Capacity Test Only
+#### 4. Non-Destructive Capacity Test
+```bash
+sudo python3 usb_test.py --safe /media/usb
+```
+Tests the free space on your drive without touching existing files.
+
+**✅ Safe**: Your existing files will NOT be touched!
+
+#### 5. Full Capacity Test (Destructive)
 ```bash
 sudo python3 usb_test.py -c /media/usb
 ```
-Validates the drive's actual storage capacity.
+Validates the drive's actual storage capacity across the entire drive.
 
-**⚠️ Warning**: Capacity test is destructive and will overwrite all data!
+**⚠️ Warning**: This test is destructive and will overwrite all data!
 
-#### 5. Run All Tests
+#### 7. Run All Tests
 ```bash
 sudo python3 usb_test.py -a /media/usb
 ```
-Runs both speed tests and capacity tests.
+Runs both speed tests and full capacity tests.
 
-#### 6. Quick 3-Iteration Speed Test
+#### 8. Quick 3-Iteration Speed Test
 ```bash
 sudo python3 usb_test.py -s /media/usb -n 3
 ```
 Faster testing with 3 iterations instead of 5.
 
 ## 🔬 How It Works
+
+### Capacity Testing: Two Approaches
+
+#### Non-Destructive Capacity Test (`--safe`)
+
+**Powered by**: `f3probe`
+
+**What it does**:
+- 🛡️  Tests only the FREE SPACE on your drive
+- ✅ Does NOT touch or delete existing files
+- ⚡ Faster than full capacity test
+- 🔍 Detects obvious capacity fraud
+
+**How it works**:
+1. Checks available free space
+2. Writes test patterns to free space only
+3. Verifies the test data
+4. Reports any capacity issues
+
+**Best for**:
+- Testing drives with data you want to keep
+- Quick capacity verification
+- Regular drive health checks
+- Drives you're actively using
+
+**Limitations**:
+- Only tests unallocated space
+- May miss issues in used areas
+- Less comprehensive than full test
+
+#### Full Capacity Test (`-c`)
+
+**Powered by**: `f3write` + `f3read`
+
+**What it does**:
+- 📦 Tests the ENTIRE drive capacity
+- ⚠️  **DESTRUCTIVE** - Erases all data
+- 🔍 Most thorough fake drive detection
+- ⏱️  Takes several hours on large drives
+
+**How it works**:
+1. Fills entire drive with test data
+2. Reads back every byte
+3. Verifies data integrity
+4. Detects fake capacity and corruption
+
+**Best for**:
+- Brand new USB drives
+- Suspected counterfeit drives
+- Most thorough testing
+- Pre-deployment validation
+
+**⚠️ Warning**:
+- **All data will be erased!**
+- Always backup first
+- Can take hours on large drives
+- Not reversible
 
 ### Speed Testing
 
@@ -275,7 +345,9 @@ Based on the highest average speed (read or write):
 |-------|---------|-------|
 | 💾 | USB Drive | Headers, drive references |
 | ⚡ | Speed | Speed test options |
-| 📦 | Capacity | Capacity test options |
+| 📦 | Capacity | Full capacity test |
+| 🛡️ | Safe/Protected | Non-destructive capacity test |
+| 🔍 | Magnify/Search | Probing operations |
 | ✅ | Success | Successful operations |
 | ❌ | Error | Failed operations |
 | ⚠️ | Warning | Important warnings |
