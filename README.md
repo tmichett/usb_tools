@@ -8,7 +8,9 @@ Comprehensive USB drive testing utilities for Linux systems. Test drive speed an
 Modern Python-based USB testing tool with:
 - 🎨 Interactive menu system
 - 📊 Multiple speed test iterations with statistics
-- 🛡️ Non-destructive capacity testing (safe!)
+- 🛡️ Quick capacity test option (5 GB, ~10-20 min)
+- 📦 Full capacity test option (all free space, thorough)
+- ✅ Preserves existing files on your drive
 - 🌈 Beautiful Unicode/emoji output
 - 📈 Advanced performance analysis
 - ⚡ More robust testing capabilities
@@ -17,8 +19,9 @@ Modern Python-based USB testing tool with:
 Original bash script for quick testing:
 - Simple command-line interface
 - Fast single-pass speed tests
-- Non-destructive and full capacity testing
-- Capacity validation with f3
+- Full capacity testing with f3write/f3read
+- Preserves existing files
+- Capacity validation and fake drive detection
 
 ## 🚀 Quick Start
 
@@ -32,10 +35,13 @@ sudo python3 usb_test.py
 # Speed test only
 sudo python3 usb_test.py -s /media/usb
 
-# Non-destructive capacity test (safe!)
-sudo python3 usb_test.py --safe /media/usb
+# Quick capacity test (5 GB, ~10-20 min)
+sudo python3 usb_test.py -q /media/usb
 
-# All tests
+# Full capacity test (all free space, hours)
+sudo python3 usb_test.py -c /media/usb
+
+# All tests (speed + full capacity)
 sudo python3 usb_test.py -a /media/usb
 
 # Custom iterations
@@ -47,10 +53,10 @@ sudo python3 usb_test.py -s /media/usb -n 8
 # Speed test only
 sudo ./usb_test.sh -s /media/usb
 
-# Non-destructive capacity test (safe!)
-sudo ./usb_test.sh -p /media/usb
+# Capacity test (fills all free space, preserves files)
+sudo ./usb_test.sh -c /media/usb
 
-# All tests
+# All tests (speed + capacity)
 sudo ./usb_test.sh -a /media/usb
 ```
 
@@ -97,8 +103,9 @@ sudo pacman -S fio f3 python
 | Progress Indicators | ✅ | ❌ |
 | Command-line Mode | ✅ | ✅ |
 | Speed Test | ✅ | ✅ |
-| Non-Destructive Capacity Test | ✅ | ✅ |
-| Full Capacity Test | ✅ | ✅ |
+| Quick Capacity Test (limited data) | ✅ | ❌ |
+| Full Capacity Test (f3write/f3read) | ✅ | ✅ |
+| Preserves Existing Files | ✅ | ✅ |
 
 ## 🎯 Use Cases
 
@@ -111,12 +118,12 @@ sudo pacman -S fio f3 python
 ## ⚠️ Important Notes
 
 - **Root required**: Both scripts require sudo/root privileges
-- **Two capacity test modes**:
-  - 🛡️ **Non-destructive** (`--safe` or `-p`): Tests free space only, keeps your files safe
-  - ⚠️ **Full/Destructive** (`-c`): Tests entire drive, erases all data
-- **Always backup**: Save important data before running full capacity tests
-- **Time required**: Full capacity tests can take hours on large drives
-- **Non-destructive is fast**: Safe capacity tests complete in minutes
+- **Capacity tests preserve files**: Tests fill free space but do NOT delete existing files
+- **Python offers two modes**:
+  - 🛡️ **Quick test** (`-q`): Tests 5 GB, fast (~10-20 min)
+  - 📦 **Full test** (`-c`): Tests all free space, thorough (hours)
+- **Bash has one mode**: Full capacity test using f3write/f3read
+- **Time required**: Full tests take hours on large drives, quick tests finish in minutes
 
 ## 🤝 Contributing
 

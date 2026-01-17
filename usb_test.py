@@ -96,21 +96,15 @@ def check_dependencies():
         'fio': 'Flexible I/O Tester',
         'f3write': 'F3 Write Tool',
         'f3read': 'F3 Read Tool',
-        'f3probe': 'F3 Probe Tool (Non-destructive)',
     }
     
     missing = []
-    optional_missing = []
     for cmd, description in dependencies.items():
         if shutil.which(cmd):
             print_success(f"{description} ({cmd}) - Found")
         else:
-            if cmd == 'f3probe':
-                print_warning(f"{description} ({cmd}) - Not Found (Optional)")
-                optional_missing.append(cmd)
-            else:
-                print_error(f"{description} ({cmd}) - Not Found")
-                missing.append(cmd)
+            print_error(f"{description} ({cmd}) - Not Found")
+            missing.append(cmd)
     
     if missing:
         print_error("\nMissing required dependencies!")
@@ -118,12 +112,7 @@ def check_dependencies():
         print_info("          or: sudo dnf install fio f3  (Fedora/RHEL)")
         sys.exit(1)
     
-    if optional_missing:
-        print_warning("\nOptional dependencies missing:")
-        print_info("Non-destructive capacity test requires f3probe")
-        print_info("Install with: sudo apt install f3  (Debian/Ubuntu)")
-    
-    print_success("\nAll required dependencies satisfied!")
+    print_success("\nAll dependencies satisfied!")
 
 def validate_mount_point(mount_point):
     """Validate that the mount point exists and is writable"""
@@ -275,14 +264,17 @@ def run_speed_test(mount_point, num_tests=5):
         print(f"  {EMOJI['warning']} Poor performance - check USB port/cable")
 
 def run_capacity_test(mount_point):
-    """Run capacity test using f3"""
-    print_section(EMOJI['capacity'], "Running Capacity Test")
+    """Run full capacity test using f3 - tests entire free space"""
+    print_section(EMOJI['capacity'], "Running Full Capacity Test")
     
     free_gb, total_gb = get_disk_space(mount_point)
-    print_info(f"Drive Space: {free_gb:.2f} GB free / {total_gb:.2f} GB total")
+    used_gb = total_gb - free_gb
+    print_info(f"Drive Space: {used_gb:.2f} GB used / {free_gb:.2f} GB free / {total_gb:.2f} GB total")
     
-    print_warning("\n⚠️  WARNING: This test will OVERWRITE all data on the drive!")
+    print_warning(f"\n⚠️  WARNING: This test will fill ALL FREE SPACE ({free_gb:.2f} GB)!")
+    print_info("Existing files will NOT be deleted, but free space will be temporarily filled.")
     print_warning("⚠️  The test may take several hours depending on drive size!")
+    print_info(f"📅 Estimated time: ~{int(free_gb * 2)} minutes")
     
     response = input(f"\n{EMOJI['think']} Continue? (yes/no): ").strip().lower()
     if response not in ['yes', 'y']:
@@ -290,7 +282,7 @@ def run_capacity_test(mount_point):
         return
     
     # Run f3write
-    print(f"\n{EMOJI['write']} Writing test data to drive...")
+    print(f"\n{EMOJI['write']} Writing test data to all free space...")
     print_info("This may take a long time. Please be patient...\n")
     
     try:
@@ -318,7 +310,8 @@ def run_capacity_test(mount_point):
         if result.returncode != 0:
             print_error("f3read failed!")
         else:
-            print_success("\nCapacity test completed!")
+            print_success("\n{EMOJI['check']} Full capacity test completed!")
+            print_info("Your existing files were preserved.")
     except KeyboardInterrupt:
         print_error("\nTest interrupted by user!")
     finally:
@@ -339,65 +332,93 @@ def cleanup_f3_files(mount_point):
     if count > 0:
         print_success(f"Removed {count} test file(s)")
 
-def run_capacity_test_safe(mount_point):
-    """Run non-destructive capacity test using f3probe"""
-    print_section(EMOJI['shield'], "Running Non-Destructive Capacity Test")
-    
-    # Check if f3probe is available
-    if not shutil.which('f3probe'):
-        print_error("f3probe is not installed!")
-        print_info("This tool is required for non-destructive testing.")
-        print_info("Install with: sudo apt install f3  (Debian/Ubuntu)")
-        print_info("          or: sudo dnf install f3  (Fedora/RHEL)")
-        print_warning("\nNote: Older versions of f3 may not include f3probe.")
-        print_info("You can still use the destructive test (-c option).")
-        return
+def run_capacity_test_quick(mount_point, test_size_gb=5):
+    """Run quick capacity test with limited data (doesn't fill entire drive)"""
+    print_section(EMOJI['shield'], "Running Quick Capacity Test")
     
     free_gb, total_gb = get_disk_space(mount_point)
-    print_info(f"Drive Space: {free_gb:.2f} GB free / {total_gb:.2f} GB total")
+    used_gb = total_gb - free_gb
+    print_info(f"Drive Space: {used_gb:.2f} GB used / {free_gb:.2f} GB free / {total_gb:.2f} GB total")
     
-    print_success(f"\n{EMOJI['shield']} This is a NON-DESTRUCTIVE test!")
-    print_info("This test will only use FREE SPACE on the drive.")
+    # Determine test size
+    actual_test_size = min(test_size_gb, free_gb - 0.5)  # Leave 500MB buffer
+    
+    if actual_test_size < 1:
+        print_warning("\nInsufficient free space for quick test (need at least 1.5 GB free).")
+        print_info("Free up some space or try the full capacity test.")
+        return
+    
+    print_success(f"\n{EMOJI['shield']} Quick capacity test - tests {actual_test_size:.1f} GB")
+    print_info("This will write a limited amount of test data to detect obvious issues.")
     print_info("Your existing files will NOT be touched.")
-    print_warning("Note: This test is less comprehensive than the full capacity test.")
+    print_warning(f"Note: For thorough testing of large drives, use the Full Capacity Test.")
+    print_info(f"\n{EMOJI['clock']} Estimated time: ~{int(actual_test_size * 2)} minutes")
     
-    if free_gb < 0.1:
-        print_warning("\nVery little free space available (<100MB).")
-        print_warning("For accurate results, more free space is recommended.")
-        response = input(f"\n{EMOJI['think']} Continue anyway? (yes/no): ").strip().lower()
-        if response not in ['yes', 'y']:
-            print_info("Test cancelled.")
-            return
+    response = input(f"\n{EMOJI['think']} Continue with quick test? (yes/no): ").strip().lower()
+    if response not in ['yes', 'y']:
+        print_info("Quick test cancelled.")
+        return
     
-    # Run f3probe
-    print(f"\n{EMOJI['magnify']} Probing drive capacity...")
-    print_info("This will test the free space on your drive.\n")
+    # Calculate number of files to write (each file is ~1GB)
+    num_files = int(actual_test_size)
     
+    print(f"\n{EMOJI['write']} Writing {num_files} GB of test data...")
+    print_info("Testing for basic capacity issues...\n")
+    
+    test_files = []
     try:
-        # f3probe provides detailed output about the drive
-        result = subprocess.run(['f3probe', '--destructive', mount_point], 
-                              capture_output=True,
-                              text=True,
-                              timeout=300)
+        # Write test files manually
+        for i in range(num_files):
+            filename = os.path.join(mount_point, f"quick_test_{i+1}.h2w")
+            print(f"  Creating file {i+1}/{num_files}... ", end='', flush=True)
+            
+            # Create 1GB file with test pattern
+            with open(filename, 'wb') as f:
+                # Write 1GB in 1MB chunks
+                chunk = b'F3TEST' * 174763  # ~1MB
+                for _ in range(1024):
+                    f.write(chunk)
+            
+            test_files.append(filename)
+            print(f"{Colors.OKGREEN}OK{Colors.ENDC}")
         
-        # Display the output
-        if result.stdout:
-            print(result.stdout)
+        # Verify files
+        print(f"\n{EMOJI['read']} Verifying test data...")
+        all_ok = True
+        for i, filename in enumerate(test_files):
+            print(f"  Verifying file {i+1}/{num_files}... ", end='', flush=True)
+            
+            # Check file size
+            size_gb = os.path.getsize(filename) / (1024**3)
+            if size_gb < 0.99:  # Allow small variance
+                print(f"{Colors.FAIL}FAILED{Colors.ENDC} (size mismatch)")
+                all_ok = False
+            else:
+                print(f"{Colors.OKGREEN}OK{Colors.ENDC}")
         
-        if result.returncode == 0:
-            print_success("\nNon-destructive capacity test completed!")
-            print_info("Check the output above for any capacity warnings or errors.")
+        if all_ok:
+            print_success(f"\n{EMOJI['check']} Quick capacity test PASSED!")
+            print_info("No obvious capacity issues detected.")
+            print_info(f"Tested {actual_test_size:.1f} GB successfully.")
         else:
-            print_error("f3probe encountered an error!")
-            if result.stderr:
-                print(f"{Colors.FAIL}{result.stderr}{Colors.ENDC}")
-                
-    except subprocess.TimeoutExpired:
-        print_error("Test timed out!")
+            print_error("\n{EMOJI['cross']} Quick capacity test FAILED!")
+            print_warning("Drive may have capacity issues or be counterfeit.")
+            
+    except Exception as e:
+        print_error(f"\nTest error: {e}")
     except KeyboardInterrupt:
         print_error("\nTest interrupted by user!")
-    except Exception as e:
-        print_error(f"Error running f3probe: {e}")
+    finally:
+        # Cleanup
+        print(f"\n{EMOJI['clean']} Cleaning up test files...")
+        for filename in test_files:
+            try:
+                if os.path.exists(filename):
+                    os.remove(filename)
+            except Exception as e:
+                print_warning(f"Could not delete {filename}: {e}")
+        if test_files:
+            print_success(f"Removed {len(test_files)} test file(s)")
 
 def show_menu():
     """Display the main menu"""
@@ -405,11 +426,12 @@ def show_menu():
     
     print(f"{Colors.BOLD}Select a test option:{Colors.ENDC}\n")
     print(f"  {Colors.OKGREEN}1{Colors.ENDC}. {EMOJI['speed']} Speed Test Only")
-    print(f"  {Colors.OKGREEN}2{Colors.ENDC}. {EMOJI['shield']} Capacity Test (Non-Destructive)")
-    print(f"  {Colors.OKGREEN}3{Colors.ENDC}. {EMOJI['capacity']} Capacity Test (Full/Destructive)")
+    print(f"  {Colors.OKGREEN}2{Colors.ENDC}. {EMOJI['shield']} Capacity Test (Quick - Limited Data)")
+    print(f"  {Colors.OKGREEN}3{Colors.ENDC}. {EMOJI['capacity']} Capacity Test (Full - All Free Space)")
     print(f"  {Colors.OKGREEN}4{Colors.ENDC}. {EMOJI['rocket']} Run All Tests (Speed + Full Capacity)")
     print(f"  {Colors.OKGREEN}5{Colors.ENDC}. {EMOJI['gear']} Advanced Speed Test (custom iterations)")
     print(f"  {Colors.FAIL}0{Colors.ENDC}. {EMOJI['cross']} Exit\n")
+    print(f"{Colors.OKCYAN}Note: Both capacity tests preserve existing files.{Colors.ENDC}")
 
 def interactive_mode():
     """Run in interactive menu mode"""
@@ -434,7 +456,7 @@ def interactive_mode():
             input(f"\n{EMOJI['ok']} Press Enter to continue...")
         
         elif choice == '2':
-            run_capacity_test_safe(mount_point)
+            run_capacity_test_quick(mount_point, test_size_gb=5)
             input(f"\n{EMOJI['ok']} Press Enter to continue...")
         
         elif choice == '3':
@@ -477,8 +499,9 @@ def command_line_mode(args):
         iterations = args.iterations if args.iterations else 5
         run_speed_test(args.mount_point, num_tests=iterations)
     
-    if args.capacity_safe:
-        run_capacity_test_safe(args.mount_point)
+    if args.capacity_quick:
+        test_size = args.quick_size if args.quick_size else 5
+        run_capacity_test_quick(args.mount_point, test_size_gb=test_size)
     
     if args.capacity or args.all:
         run_capacity_test(args.mount_point)
@@ -493,20 +516,27 @@ def main():
 Examples:
   sudo python3 usb_test.py                       # Interactive mode
   sudo python3 usb_test.py -s /media/usb         # Speed test only
-  sudo python3 usb_test.py --safe /media/usb     # Non-destructive capacity test
-  sudo python3 usb_test.py -c /media/usb         # Full capacity test (destructive)
+  sudo python3 usb_test.py -q /media/usb         # Quick capacity test (5 GB)
+  sudo python3 usb_test.py -q /media/usb --size 10  # Quick test with 10 GB
+  sudo python3 usb_test.py -c /media/usb         # Full capacity test (all free space)
   sudo python3 usb_test.py -a /media/usb         # All tests (speed + full capacity)
   sudo python3 usb_test.py -s /media/usb -n 8    # Speed test with 8 iterations
+
+Note: Both capacity tests preserve your existing files.
+      Quick test (-q) writes limited data for fast checking.
+      Full test (-c) fills all free space for thorough validation.
         '''
     )
     
     parser.add_argument('mount_point', nargs='?', help='USB drive mount point')
     parser.add_argument('-s', '--speed', action='store_true', 
                        help='Run speed test only')
-    parser.add_argument('--safe', '--capacity-safe', dest='capacity_safe', action='store_true',
-                       help='Run non-destructive capacity test (uses f3probe)')
+    parser.add_argument('-q', '--quick', dest='capacity_quick', action='store_true',
+                       help='Run quick capacity test (limited data, preserves files)')
+    parser.add_argument('--size', dest='quick_size', type=int,
+                       help='Size in GB for quick capacity test (default: 5)')
     parser.add_argument('-c', '--capacity', action='store_true', 
-                       help='Run full capacity test (DESTRUCTIVE - erases data)')
+                       help='Run full capacity test (all free space, preserves files)')
     parser.add_argument('-a', '--all', action='store_true', 
                        help='Run all tests (speed + full capacity)')
     parser.add_argument('-n', '--iterations', type=int, 
