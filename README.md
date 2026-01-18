@@ -4,18 +4,33 @@ Comprehensive USB drive testing utilities for Linux systems. Test drive speed an
 
 ## 📦 Available Tools
 
-### 1. **usb_test.py** - Python Testing Suite (Recommended)
-Modern Python-based USB testing tool with:
+### 1. **test_usb.py** - Cross-Platform Testing Suite ⭐ NEW!
+**Universal USB tester - works everywhere!**
+- 🌍 **Cross-platform**: Windows, macOS, and Linux
+- 🎒 **Portable**: No dependencies, pure Python
+- 📦 **Self-contained**: Single file, no installation
+- 🎨 Interactive menu system
+- 📊 Speed tests with statistics
+- 🔐 Capacity tests with SHA-256 verification
+- 🌈 Beautiful Unicode/emoji output
+- ✅ Preserves existing files
+
+**Best for**: Any platform, users without admin rights, portable testing
+
+### 2. **usb_test.py** - Linux Testing Suite (Advanced)
+Modern Python-based USB testing tool for Linux:
 - 🎨 Interactive menu system
 - 📊 Multiple speed test iterations with statistics
 - 🛡️ Quick capacity test option (5 GB, ~10-20 min)
-- 📦 Full capacity test option (all free space, thorough)
+- 📦 Full capacity test with f3write/f3read
 - ✅ Preserves existing files on your drive
 - 🌈 Beautiful Unicode/emoji output
 - 📈 Advanced performance analysis
-- ⚡ More robust testing capabilities
+- ⚡ Uses fio and f3 for thorough testing
 
-### 2. **usb_test.sh** - Bash Script (Legacy)
+**Best for**: Linux users, maximum testing capability
+
+### 3. **usb_test.sh** - Bash Script (Legacy)
 Original bash script for quick testing:
 - Simple command-line interface
 - Fast single-pass speed tests
@@ -23,15 +38,38 @@ Original bash script for quick testing:
 - Preserves existing files
 - Capacity validation and fake drive detection
 
+**Best for**: Shell scripting, minimalist approach
+
 ## 🚀 Quick Start
 
-### Python Version (Interactive)
+### Cross-Platform Version (Works Everywhere! ⭐)
+
+**No installation, no dependencies, works on all platforms!**
+
 ```bash
-sudo python3 usb_test.py
+# Interactive mode (recommended)
+python3 test_usb.py                    # Linux/macOS
+python test_usb.py                     # Windows
+
+# Command-line mode
+python3 test_usb.py -s /media/usb      # Linux
+python3 test_usb.py -s /Volumes/USB    # macOS
+python test_usb.py -s E:\              # Windows
+
+# All tests
+python3 test_usb.py -a /media/usb      # Linux
+python3 test_usb.py -a /Volumes/USB    # macOS
+python test_usb.py -a E:\              # Windows
 ```
 
-### Python Version (Command Line)
+### Linux Testing Suite (Advanced)
+
+**Requires fio and f3 tools installed:**
+
 ```bash
+# Interactive mode
+sudo python3 usb_test.py
+
 # Speed test only
 sudo python3 usb_test.py -s /media/usb
 
@@ -48,7 +86,10 @@ sudo python3 usb_test.py -a /media/usb
 sudo python3 usb_test.py -s /media/usb -n 8
 ```
 
-### Bash Version
+### Bash Script
+
+**Requires fio and f3 tools installed:**
+
 ```bash
 # Speed test only
 sudo ./usb_test.sh -s /media/usb
@@ -62,10 +103,14 @@ sudo ./usb_test.sh -a /media/usb
 
 ## 📋 System Requirements
 
-### Required Packages
+### For test_usb.py (Cross-Platform)
+- **Python 3.6+** - Usually pre-installed on modern systems
+- **No other dependencies!** - Everything built-in
+
+### For usb_test.py and usb_test.sh (Linux Only)
+- **Python 3.6+** - Usually pre-installed
 - **fio** - Flexible I/O Tester
 - **f3** - Fight Flash Fraud tools
-- **python3** - For the Python version (usually pre-installed)
 
 ### Installation
 
@@ -86,26 +131,33 @@ sudo pacman -S fio f3 python
 
 ## 📚 Documentation
 
-- [**USB_Test_BASH.md**](USB_Test_BASH.md) - Detailed bash script documentation
-- [**USB_Test_PYTHON.md**](USB_Test_PYTHON.md) - Python script guide and features
+- [**TEST_USB_CROSSPLATFORM.md**](TEST_USB_CROSSPLATFORM.md) - Cross-platform script guide ⭐ NEW!
+- [**USB_Test_PYTHON.md**](USB_Test_PYTHON.md) - Linux Python script guide
+- [**USB_Test_BASH.md**](USB_Test_BASH.md) - Bash script documentation
+- [**CAPACITY_TESTING.md**](CAPACITY_TESTING.md) - Understanding capacity tests
+- [**QUICK_START.md**](QUICK_START.md) - Quick reference guide
 
 ## ⚡ Features Comparison
 
-| Feature | Python Script | Bash Script |
-|---------|--------------|-------------|
-| Interactive Menu | ✅ | ❌ |
-| Multiple Test Iterations | ✅ | ❌ |
-| Statistics (avg/min/max) | ✅ | ❌ |
-| Unicode/Emoji Output | ✅ | ❌ |
-| USB Version Detection | ✅ | ❌ |
-| Performance Rating | ✅ | ❌ |
-| Colored Output | ✅ | ❌ |
-| Progress Indicators | ✅ | ❌ |
-| Command-line Mode | ✅ | ✅ |
-| Speed Test | ✅ | ✅ |
-| Quick Capacity Test (limited data) | ✅ | ❌ |
-| Full Capacity Test (f3write/f3read) | ✅ | ✅ |
-| Preserves Existing Files | ✅ | ✅ |
+| Feature | test_usb.py<br>(Cross-Platform) | usb_test.py<br>(Linux) | usb_test.sh<br>(Bash) |
+|---------|--------------------------|-----------------|---------------|
+| **Platform Support** | ⭐ Win/Mac/Linux | Linux only | Linux only |
+| **Dependencies** | ⭐ None! | fio, f3 | fio, f3 |
+| **Portability** | ⭐ Single file | Requires tools | Requires tools |
+| Interactive Menu | ✅ | ✅ | ❌ |
+| Multiple Test Iterations | ✅ | ✅ | ❌ |
+| Statistics (avg/min/max) | ✅ | ✅ | ❌ |
+| Unicode/Emoji Output | ✅ | ✅ | ❌ |
+| USB Version Detection | ✅ | ✅ | ❌ |
+| Performance Rating | ✅ | ✅ | ❌ |
+| Colored Output | ✅ | ✅ | ❌ |
+| Progress Indicators | ✅ | ✅ | ❌ |
+| Command-line Mode | ✅ | ✅ | ✅ |
+| Speed Test | ✅ Built-in | ✅ fio | ✅ fio |
+| Quick Capacity Test | ✅ Adjustable | ✅ Python | ❌ |
+| Full Capacity Test | ✅ Built-in | ✅ f3 | ✅ f3 |
+| Data Verification | ✅ SHA-256 | ✅ f3 patterns | ✅ f3 patterns |
+| Preserves Existing Files | ✅ | ✅ | ✅ |
 
 ## 🎯 Use Cases
 
@@ -117,13 +169,22 @@ sudo pacman -S fio f3 python
 
 ## ⚠️ Important Notes
 
-- **Root required**: Both scripts require sudo/root privileges
+### test_usb.py (Cross-Platform) ⭐
+- ✅ **No dependencies** - works on any system with Python
+- ✅ **No admin/root required** - runs with normal user permissions
+- ✅ **Portable** - single file, copy and run anywhere
+- ✅ **Safe** - preserves existing files, only uses free space
+- ⏱️ **Fast** - pure Python implementation
+
+### usb_test.py & usb_test.sh (Linux)
+- **Root required**: Requires sudo/root privileges for direct I/O
+- **Dependencies needed**: fio and f3 must be installed
 - **Capacity tests preserve files**: Tests fill free space but do NOT delete existing files
 - **Python offers two modes**:
-  - 🛡️ **Quick test** (`-q`): Tests 5 GB, fast (~10-20 min)
+  - 🛡️ **Quick test** (`-q`): Tests limited data, fast (~10-20 min)
   - 📦 **Full test** (`-c`): Tests all free space, thorough (hours)
 - **Bash has one mode**: Full capacity test using f3write/f3read
-- **Time required**: Full tests take hours on large drives, quick tests finish in minutes
+- **Time required**: Full tests take hours on large drives
 
 ## 🤝 Contributing
 
