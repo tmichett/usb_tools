@@ -46,10 +46,12 @@ Original bash script for quick testing:
 
 **No installation, no dependencies, works on all platforms!**
 
+**⚠️ REQUIRES: sudo (Linux/macOS) or Administrator (Windows)**
+
 ```bash
 # Interactive mode (recommended)
-python3 test_usb.py                    # Linux/macOS
-python test_usb.py                     # Windows
+sudo python3 test_usb.py               # Linux/macOS (REQUIRES sudo)
+python test_usb.py                     # Windows (Run as Administrator)
 
 # Command-line mode
 python3 test_usb.py -s /media/usb      # Linux
@@ -171,10 +173,10 @@ sudo pacman -S fio f3 python
 
 ### test_usb.py (Cross-Platform) ⭐
 - ✅ **No dependencies** - works on any system with Python
-- ✅ **No admin/root required** - runs with normal user permissions
+- ⚠️ **REQUIRES sudo/Administrator** - mandatory for accurate testing
 - ✅ **Portable** - single file, copy and run anywhere
 - ✅ **Safe** - preserves existing files, only uses free space
-- ⏱️ **Fast** - pure Python implementation
+- ⏱️ **Accurate** - proper cache clearing and disk synchronization
 
 ### usb_test.py & usb_test.sh (Linux)
 - **Root required**: Requires sudo/root privileges for direct I/O

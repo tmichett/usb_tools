@@ -145,15 +145,25 @@ def format_bytes(bytes_val):
     return f"{bytes_val:.2f} PB"
 
 def generate_test_data(size_mb):
-    """Generate test data with a known pattern"""
+    """Generate test data with a known pattern - exactly size_mb megabytes"""
     # Create a repeating pattern that's easy to verify
     pattern = b'USB_TEST_' + os.urandom(54)  # 64 bytes total
-    chunk_size = 1024 * 1024  # 1 MB
+    chunk_size = 1024 * 1024  # 1 MB exactly
     
-    # Pre-generate 1MB of pattern
-    mb_pattern = pattern * (chunk_size // len(pattern))
+    # Pre-generate exactly 1MB of pattern
+    repeats = chunk_size // len(pattern)
+    mb_pattern = pattern * repeats
     
-    # Return generator for memory efficiency
+    # Ensure exactly 1MB (pad if needed due to rounding)
+    if len(mb_pattern) < chunk_size:
+        mb_pattern += pattern[:chunk_size - len(mb_pattern)]
+    elif len(mb_pattern) > chunk_size:
+        mb_pattern = mb_pattern[:chunk_size]
+    
+    # Verify we have exactly 1MB
+    assert len(mb_pattern) == chunk_size, f"Pattern size error: {len(mb_pattern)} != {chunk_size}"
+    
+    # Return generator for memory efficiency - yields exactly size_mb MB
     for _ in range(size_mb):
         yield mb_pattern
 
@@ -421,13 +431,17 @@ def run_capacity_test(path, test_size_gb=5):
     test_dir = Path(path) / f'capacity_test_{int(time.time())}'
     test_dir.mkdir(exist_ok=True)
     
-    file_size_mb = 100  # 100MB per file
-    num_files = test_size_gb * 10  # 10 files per GB
+    # Use 1GB files (like f3 does) for better performance and fewer file system operations
+    file_size_mb = 1024  # 1GB per file
+    num_files = test_size_gb  # 1 file per GB
+    
+    print_info(f"Will create {num_files} test file(s) of 1 GB each")
     
     print(f"\n{EMOJI['write']} Phase 1: Writing test data...")
     
     checksums = {}
     bytes_written = 0
+    errors = 0
     start_time = time.time()
     
     try:
@@ -440,25 +454,67 @@ def run_capacity_test(path, test_size_gb=5):
             
             # Generate data with hash
             hasher = hashlib.sha256()
+            file_bytes_written = 0
+            write_error = False
             
-            with open(file_path, 'wb') as f:
-                for chunk in generate_test_data(file_size_mb):
-                    f.write(chunk)
-                    hasher.update(chunk)
-                    bytes_written += len(chunk)
-            
-            checksums[file_path.name] = hasher.hexdigest()
-            print(f"{Colors.OKGREEN}OK{Colors.ENDC}")
+            try:
+                with open(file_path, 'wb', buffering=8192) as f:
+                    for chunk in generate_test_data(file_size_mb):
+                        f.write(chunk)
+                        hasher.update(chunk)
+                        file_bytes_written += len(chunk)
+                        bytes_written += len(chunk)
+                    
+                    # CRITICAL: Ensure data is written to disk
+                    f.flush()
+                    os.fsync(f.fileno())
+                
+                # Verify file was written correctly (immediate size check after close)
+                actual_size = file_path.stat().st_size
+                expected_size = file_size_mb * 1024 * 1024
+                
+                if actual_size == expected_size and file_bytes_written == expected_size:
+                    checksums[file_path.name] = hasher.hexdigest()
+                    print(f"{Colors.OKGREEN}OK{Colors.ENDC}")
+                else:
+                    print(f"{Colors.FAIL}SIZE ERROR{Colors.ENDC}")
+                    if i < 5:  # Show details for first 5 errors
+                        print(f"      Expected: {format_bytes(expected_size)}")
+                        print(f"      File size: {format_bytes(actual_size)}")
+                        print(f"      Generated: {format_bytes(file_bytes_written)}")
+                    errors += 1
+                    write_error = True
+                    
+            except OSError as write_err:
+                print(f"{Colors.FAIL}WRITE FAILED: {write_err}{Colors.ENDC}")
+                errors += 1
+                # Check if it's a disk full error
+                if 'No space left' in str(write_err) or 'Disk full' in str(write_err):
+                    print_error("\nDisk full! Cannot continue.")
+                    break
+                continue
+            except Exception as write_err:
+                print(f"{Colors.FAIL}ERROR: {write_err}{Colors.ENDC}")
+                errors += 1
+                continue
         
         write_time = time.time() - start_time
         write_speed = (bytes_written / (1024**2)) / write_time if write_time > 0 else 0
         
         print_success(f"\nWrote {format_bytes(bytes_written)} in {write_time:.1f}s ({write_speed:.2f} MB/s)")
         
+        if errors > 0:
+            print_warning(f"{errors} file(s) had write errors and will be skipped in verification")
+        
+        # CRITICAL: Sync filesystem before verification
+        print_info("Syncing filesystem...")
+        os.sync()
+        time.sleep(1)  # Let sync complete
+        
         # Verification phase
         print(f"\n{EMOJI['read']} Phase 2: Verifying data integrity...")
         
-        errors = 0
+        # Note: errors already initialized in write phase
         bytes_verified = 0
         start_time = time.time()
         
@@ -643,6 +699,61 @@ def interactive_mode():
             print_error("Invalid choice!")
             time.sleep(1)
 
+def check_privileges():
+    """Check if running with administrator/root privileges and exit if not"""
+    system = platform.system()
+    
+    if system in ['Linux', 'Darwin']:  # Linux or macOS
+        try:
+            if os.geteuid() != 0:
+                print_error("This script requires root/sudo privileges!")
+                print("")
+                print_info("Reason: Accurate testing requires:")
+                print_info("  • Cache clearing (Linux: /proc/sys/vm/drop_caches)")
+                print_info("  • Direct I/O operations")
+                print_info("  • Proper disk synchronization")
+                print_info("  • Accurate speed measurements")
+                print("")
+                print(f"{Colors.BOLD}Please run with sudo:{Colors.ENDC}")
+                if system == 'Darwin':
+                    print(f"  {Colors.OKGREEN}sudo python3 test_usb.py{Colors.ENDC}")
+                else:
+                    print(f"  {Colors.OKGREEN}sudo python3 test_usb.py{Colors.ENDC}")
+                print("")
+                print_warning("Without sudo:")
+                print_warning("  • Speed tests may show cached results (false high speeds)")
+                print_warning("  • Capacity tests may give false failures")
+                print("")
+                sys.exit(1)
+        except AttributeError:
+            # geteuid() not available on this platform
+            pass
+    
+    elif system == 'Windows':
+        try:
+            import ctypes
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin()
+            if not is_admin:
+                print_error("This script requires Administrator privileges!")
+                print("")
+                print_info("Reason: Accurate testing requires elevated permissions")
+                print("")
+                print(f"{Colors.BOLD}Please run as Administrator:{Colors.ENDC}")
+                print_info("  1. Right-click Command Prompt")
+                print_info("  2. Select 'Run as Administrator'")
+                print_info("  3. Run: python test_usb.py")
+                print("")
+                print_warning("Without Administrator:")
+                print_warning("  • Speed tests may be inaccurate")
+                print_warning("  • Capacity tests may give false results")
+                print("")
+                sys.exit(1)
+        except Exception:
+            # Can't determine, warn but continue
+            print_warning("Could not verify Administrator privileges")
+            print_warning("Results may be inaccurate without Administrator rights")
+            print("")
+
 def command_line_mode(args):
     """Run in command-line mode"""
     if not validate_path(args.path):
@@ -679,14 +790,17 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 Examples:
-  python test_usb.py                              # Interactive mode
-  python test_usb.py -s /media/usb                # Speed test (512MB x 5)
-  python test_usb.py -s /media/usb --fast         # High-performance (2GB x 5)
-  python test_usb.py -c E:\\ --size-gb 5          # Quick capacity test (5GB)
-  python test_usb.py -c E:\\ --full-capacity      # Full capacity test (all free space)
-  python test_usb.py -a /Volumes/USB              # All tests (macOS)
-  python test_usb.py -s /mnt/usb --size-mb 2048   # Custom: 2GB x 5
-  python test_usb.py -s /mnt/usb -n 8 --size-mb 4096  # Custom: 4GB x 8
+  Linux/macOS (requires sudo):
+    sudo python3 test_usb.py                      # Interactive mode
+    sudo python3 test_usb.py -s /media/usb        # Speed test (512MB x 5)
+    sudo python3 test_usb.py -s /media/usb --fast # High-performance (2GB x 5)
+    sudo python3 test_usb.py -c /media/usb --full-capacity # Full capacity test
+    sudo python3 test_usb.py -a /Volumes/USB      # All tests (macOS)
+  
+  Windows (requires Administrator):
+    python test_usb.py                            # Interactive mode
+    python test_usb.py -s E:\\                    # Speed test
+    python test_usb.py -c E:\\ --full-capacity    # Full capacity test
 
 Test Size Guidelines:
   Speed Tests:
@@ -698,12 +812,13 @@ Test Size Guidelines:
     - Quick (5GB):       Fast verification, detects obvious fakes
     - Full (all space):  Thorough testing, best for fake drive detection
 
-Cross-Platform Notes:
+Requirements & Notes:
+  - REQUIRES: sudo (Linux/macOS) or Administrator (Windows)
   - Works on Windows, macOS, and Linux
   - No external dependencies required
   - Pure Python implementation
   - Tests preserve existing files
-  - On Linux: run with sudo for accurate read speeds (bypasses cache)
+  - Sudo is mandatory for accurate cache clearing and disk synchronization
         '''
     )
     
@@ -732,6 +847,9 @@ Cross-Platform Notes:
     # Show platform info
     os_name, os_emoji = get_platform_info()
     print_header(f"{os_emoji} Cross-Platform USB Tester - {os_name}")
+    
+    # Check for required privileges
+    check_privileges()
     
     # Run appropriate mode
     if not args.path and not args.no_interactive:

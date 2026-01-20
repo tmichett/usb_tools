@@ -54,6 +54,23 @@ python --version
 
 **Download the script** (or copy it to your system)
 
+### ⚠️ Important: Requires Administrator/Root Privileges
+
+**The script REQUIRES elevated privileges to run:**
+
+- **Linux/macOS**: Must use `sudo`
+- **Windows**: Must run as Administrator
+
+**Why?**
+- Cache clearing for accurate speed tests
+- Direct I/O operations
+- Proper disk synchronization
+- Prevents false test results
+
+**Without sudo/admin:**
+- Script will exit with error message
+- Tests cannot run (prevented for accuracy)
+
 ## 📖 Complete Usage Guide
 
 ### Step-by-Step: Testing Your First USB Drive
@@ -83,10 +100,10 @@ df -h | grep media
 
 **Step 2: Run Interactive Mode**
 ```bash
-# Linux/macOS (use sudo for best results)
+# Linux/macOS (REQUIRES sudo)
 sudo python3 test_usb.py
 
-# Windows (run as Administrator for best results)  
+# Windows (REQUIRES Administrator - right-click Command Prompt, "Run as Administrator")
 python test_usb.py
 ```
 
